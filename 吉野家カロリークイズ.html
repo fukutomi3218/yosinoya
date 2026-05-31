@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>吉野家 カロリー当てクイズ</title>
+  <style>
+    :root {
+      --red: #D01010;
+      --orange: #F08020;
+      --cream: #FFF8F0;
+      --correct: #27ae60;
+      --wrong: #e74c3c;
+      --dark: #222;
+      --gray: #666;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'メイリオ', 'Yu Gothic', sans-serif;
+      background: var(--cream);
+      color: var(--dark);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--red);
+      color: white;
+      padding: 16px 20px;
+      text-align: center;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+    }
+    header h1 { font-size: 1.55rem; letter-spacing: 0.04em; }
+    header .sub { font-size: 0.82rem; opacity: 0.88; margin-top: 4px; }
+
+    .wrap {
+      max-width: 620px;
+      margin: 0 auto;
+      padding: 20px 16px 40px;
+    }
+
+    /* ── START SCREEN ── */
+    .start-card {
+      background: white;
+      border-radius: 18px;
+      padding: 36px 24px;
+      text-align: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.09);
+    }
+    .start-icon { font-size: 4rem; margin-bottom: 14px; }
+    .start-title { font-size: 1.4rem; font-weight: bold; margin-bottom: 10px; }
+    .start-desc {
+      font-size: 0.9rem;
+      color: var(--gray);
+      line-height: 1.7;
+      margin-bottom: 22px;
+    }
+    .diff-label { font-size: 0.85rem; font-weight: bold; color: var(--gray); margin-bottom: 10px; }
+    .diff-row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .diff-btn {
+      padding: 8px 18px;
+      border: 2px solid #ddd;
+      border-radius: 20px;
+      background: white;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: bold;
+      transition: all .15s;
+      color: var(--dark);
+    }
+    .diff-btn.active { border-color: var(--red); background: var(--red); color: white; }
+    .start-btn {
+      width: 100%;
+      padding: 15px;
+      background: var(--red);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background .15s;
+      letter-spacing: 0.05em;
+    }
+    .start-btn:hover { background: #b00d0d; }
+
+    /* ── QUIZ AREA ── */
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 0.88rem;
+      color: var(--gray);
+    }
+    .hud strong { color: var(--red); font-size: 1rem; }
+
+    .prog-bg {
+      background: #ddd;
+      border-radius: 8px;
+      height: 9px;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+    .prog-fill {
+      height: 100%;
+      background: linear-gradient(to right, var(--red), var(--orange));
+      border-radius: 8px;
+      transition: width .4s ease;
+    }
+    .prog-txt {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--gray);
+      margin-bottom: 14px;
+    }
+
+    /* Question card */
+    .q-card {
+      background: white;
+      border-radius: 16px;
+      padding: 22px 20px 18px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      margin-bottom: 14px;
+    }
+    .cat-badge {
+      display: inline-block;
+      background: var(--orange);
+      color: white;
+      font-size: 0.7rem;
+      font-weight: bold;
+      padding: 3px 11px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+    }
+    .menu-name {
+      font-size: 1.35rem;
+      font-weight: bold;
+      line-height: 1.4;
+    }
+    .menu-size {
+      display: inline-block;
+      background: #f0f0f0;
+      color: var(--gray);
+      font-size: 0.77rem;
+      padding: 2px 9px;
+      border-radius: 5px;
+      margin-top: 6px;
+    }
+    .q-prompt {
+      margin-top: 13px;
+      font-size: 0.92rem;
+      color: var(--gray);
+    }
+    .q-prompt strong { color: var(--red); }
+
+    /* Choices */
+    .choices-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .c-btn {
+      background: white;
+      border: 2px solid #ddd;
+      border-radius: 13px;
+      padding: 18px 8px;
+      font-size: 1.15rem;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: center;
+      color: var(--dark);
+      transition: all .15s;
+      line-height: 1.2;
+    }
+    .c-btn:hover:not(:disabled) {
+      border-color: var(--orange);
+      background: #fff5ee;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(240,128,32,.18);
+    }
+    .c-btn .unit { font-size: 0.72rem; font-weight: normal; opacity: .75; }
+    .c-btn.correct  { background: #e6f9ef; border-color: var(--correct); color: #1a7a3c; }
+    .c-btn.wrong    { background: #fdecea; border-color: var(--wrong);   color: #9b2335; }
+    .c-btn.revealed { background: #e6f9ef; border-color: var(--correct); color: #1a7a3c; }
+    .c-btn:disabled { cursor: default; }
+
+    /* Feedback */
+    .feedback {
+      background: white;
+      border-radius: 16px;
+      padding: 18px 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      margin-bottom: 14px;
+      display: none;
+      border-left: 5px solid transparent;
+    }
+    .feedback.fb-ok  { border-left-color: var(--correct); }
+    .feedback.fb-ng  { border-left-color: var(--wrong);   }
+    .fb-head { font-size: 1.05rem; font-weight: bold; margin-bottom: 7px; }
+    .fb-ok .fb-head { color: #1a7a3c; }
+    .fb-ng .fb-head { color: #9b2335; }
+    .fb-sub { font-size: 0.87rem; color: var(--gray); margin-bottom: 12px; }
+    .nut-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+    }
+    .nut-box {
+      background: #f7f7f7;
+      border-radius: 9px;
+      padding: 9px 4px;
+      text-align: center;
+    }
+    .nut-box.hl { background: #fff0e0; }
+    .nut-lbl { font-size: 0.65rem; color: var(--gray); }
+    .nut-val { font-size: 0.88rem; font-weight: bold; margin-top: 3px; }
+    .nut-box.hl .nut-val { color: var(--red); }
+    .next-btn {
+      display: block;
+      width: 100%;
+      margin-top: 13px;
+      padding: 13px;
+      background: var(--red);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.98rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .next-btn:hover { background: #b00d0d; }
+
+    /* ── RESULT ── */
+    .result-card {
+      display: none;
+      background: white;
+      border-radius: 18px;
+      padding: 34px 22px;
+      text-align: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.09);
+    }
+    .res-icon { font-size: 4rem; margin-bottom: 12px; }
+    .res-title { font-size: 1.4rem; font-weight: bold; margin-bottom: 6px; }
+    .res-score { font-size: 2.8rem; font-weight: bold; color: var(--red); margin: 10px 0; }
+    .res-msg { font-size: 0.92rem; color: var(--gray); margin-bottom: 20px; }
+    .res-history {
+      text-align: left;
+      max-height: 280px;
+      overflow-y: auto;
+      margin-bottom: 18px;
+      border-radius: 10px;
+    }
+    .h-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 12px;
+      border-radius: 9px;
+      margin-bottom: 5px;
+      font-size: 0.83rem;
+    }
+    .h-row.ok { background: #e6f9ef; }
+    .h-row.ng { background: #fdecea; }
+    .h-name { flex: 1; font-weight: bold; color: var(--dark); }
+    .h-ans { font-weight: bold; font-size: 0.8rem; white-space: nowrap; padding-left: 8px; }
+    .h-row.ok .h-ans { color: #1a7a3c; }
+    .h-row.ng .h-ans { color: #9b2335; }
+    .restart-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--red);
+      color: white;
+      border: none;
+      border-radius: 13px;
+      font-size: 1.05rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .restart-btn:hover { background: #b00d0d; }
+
+    @media (max-width: 380px) {
+      .choices-grid { grid-template-columns: 1fr; }
+      .nut-grid { grid-template-columns: repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🍚 吉野家 カロリー当てクイズ</h1>
+  <div class="sub">メニューのカロリーを4択から選ぼう！</div>
+</header>
+
+<div class="wrap">
+
+  <!-- ① スタート画面 -->
+  <div class="start-card" id="startScreen">
+    <div class="start-icon">🥢</div>
+    <div class="start-title">カロリー当てクイズ</div>
+    <div class="start-desc">
+      吉野家のメニューが1問ずつ出題されます。<br>
+      カロリー（kcal）を4択で当ててください！<br>
+      全10問、何問正解できるかな？
+    </div>
+    <div class="diff-label">難易度を選んでください</div>
+    <div class="diff-row">
+      <button class="diff-btn active" data-diff="easy"   onclick="setDiff(this)">かんたん</button>
+      <button class="diff-btn"        data-diff="normal" onclick="setDiff(this)">ふつう</button>
+      <button class="diff-btn"        data-diff="hard"   onclick="setDiff(this)">むずかしい</button>
+    </div>
+    <button class="start-btn" onclick="startGame()">ゲームスタート！</button>
+  </div>
+
+  <!-- ② クイズ画面 -->
+  <div id="quizArea" style="display:none">
+    <div class="hud">
+      <span>問題 <strong id="qNum">1</strong> / 10</span>
+      <span>正解 <strong id="scoreDisp">0</strong> 問</span>
+    </div>
+    <div class="prog-bg"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+    <div class="prog-txt">
+      <span id="progLeft">0 / 10</span>
+      <span id="progPct">0%</span>
+    </div>
+
+    <div class="q-card">
+      <div class="cat-badge" id="catBadge"></div>
+      <div class="menu-name" id="menuName"></div>
+      <div class="menu-size" id="menuSize" style="display:none"></div>
+      <div class="q-prompt">このメニューのカロリーは？ <strong>4択</strong> で答えてね</div>
+    </div>
+
+    <div class="choices-grid" id="choicesGrid"></div>
+
+    <div class="feedback" id="feedback">
+      <div class="fb-head" id="fbHead"></div>
+      <div class="fb-sub"  id="fbSub"></div>
+      <div class="nut-grid" id="nutGrid"></div>
+      <button class="next-btn" id="nextBtn" onclick="nextQ()">次の問題へ →</button>
+    </div>
+  </div>
+
+  <!-- ③ 結果画面 -->
+  <div class="result-card" id="resultScreen">
+    <div class="res-icon"  id="resIcon"></div>
+    <div class="res-title">クイズ終了！</div>
+    <div class="res-score" id="resScore"></div>
+    <div class="res-msg"   id="resMsg"></div>
+    <div class="res-history" id="resHistory"></div>
+    <button class="restart-btn" onclick="goStart()">もう一度遊ぶ</button>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+// ===== DATA (カロリーデータありのメニューのみ) =====
+const DATA = [
+  {cat:"牛丼",      name:"牛丼",                        size:"並盛",  price:498,  kcal:633,  p:19.6, f:23.6, c:88.2},
+  {cat:"丼",        name:"豚丼",                        size:"並盛",  price:465,  kcal:576,  p:14.4, f:18.6, c:88.1},
+  {cat:"丼",        name:"ねぎ塩豚丼",                  size:"並盛",  price:584,  kcal:612,  p:15.2, f:20.9, c:91.5},
+  {cat:"丼",        name:"牛カルビ丼",                  size:"並盛",  price:718,  kcal:751,  p:20.8, f:32.7, c:92.7},
+  {cat:"丼",        name:"ねぎ塩牛カルビ丼",            size:"並盛",  price:718,  kcal:734,  p:20.6, f:33.4, c:87.1},
+  {cat:"丼",        name:"牛焼肉丼",                    size:"並盛",  price:718,  kcal:700,  p:21.4, f:26.2, c:97.6},
+  {cat:"丼",        name:"スタミナ超特盛丼",            size:null,    price:1271, kcal:2016, p:59.3, f:109.3,c:197.3},
+  {cat:"丼",        name:"から揚げ丼",                  size:"並盛",  price:619,  kcal:943,  p:44.0, f:31.9, c:104.5},
+  {cat:"丼",        name:"から牛",                      size:"並盛",  price:729,  kcal:887,  p:30.0, f:41.0, c:100.2},
+  {cat:"丼",        name:"タルタル南蛮から揚げ丼",      size:"並盛",  price:729,  kcal:1230, p:34.3, f:69.5, c:116.3},
+  {cat:"定食",      name:"牛鉄板焼肉定食",              size:null,    price:954,  kcal:811,  p:26.6, f:32.2, c:106.9},
+  {cat:"定食",      name:"牛鉄板カルビ定食",            size:null,    price:954,  kcal:911,  p:27.4, f:43.7, c:100.2},
+  {cat:"定食",      name:"牛皿定食",                    size:"並盛",  price:789,  kcal:719,  p:26.4, f:29.3, c:89.5},
+  {cat:"定食",      name:"牛さば定食",                  size:null,    price:844,  kcal:738,  p:26.6, f:28.5, c:88.0},
+  {cat:"定食",      name:"牛鮭定食",                    size:null,    price:844,  kcal:685,  p:31.8, f:25.0, c:88.0},
+  {cat:"定食",      name:"ねぎ塩豚定食",                size:null,    price:844,  kcal:710,  p:19.4, f:26.1, c:100.2},
+  {cat:"定食",      name:"ねぎ塩牛カルビ定食",          size:null,    price:844,  kcal:894,  p:27.2, f:44.6, c:94.3},
+  {cat:"定食",      name:"から揚げ定食",                size:"並盛",  price:844,  kcal:1168, p:42.2, f:59.0, c:115.9},
+  {cat:"定食",      name:"タルタル南蛮から揚げ定食",    size:"並盛",  price:954,  kcal:1454, p:44.6, f:84.6, c:127.5},
+  {cat:"定食",      name:"ダブル定食（牛皿・から揚げ）",size:null,    price:1064, kcal:1244, p:46.7, f:67.4, c:112.2},
+  {cat:"定食",      name:"ダブル定食（牛皿・牛鉄板焼肉）",size:null,  price:1064, kcal:1076, p:39.5, f:55.0, c:108.6},
+  {cat:"定食",      name:"ダブル定食（牛皿・牛鉄板カルビ）",size:null,price:1064, kcal:1176, p:40.3, f:66.5, c:101.9},
+  {cat:"定食",      name:"ダブル定食（牛皿・ねぎ塩豚）",size:null,   price:1064, kcal:975,  p:32.3, f:48.9, c:101.9},
+  {cat:"定食",      name:"ダブル定食（牛皿・ねぎ塩カルビ）",size:null,price:1064, kcal:1159, p:40.2, f:67.4, c:95.9},
+  {cat:"皿",        name:"牛皿",                        size:"並盛",  price:444,  kcal:281,  p:13.5, f:22.9, c:5.2},
+  {cat:"皿",        name:"豚皿",                        size:"並盛",  price:435,  kcal:232,  p:8.9,  f:17.9, c:6.5},
+  {cat:"皿",        name:"牛鉄板焼肉皿",                size:null,    price:633,  kcal:431,  p:19.2, f:30.9, c:19.3},
+  {cat:"皿",        name:"牛鉄板カルビ皿",              size:null,    price:633,  kcal:532,  p:20.0, f:42.4, c:12.6},
+  {cat:"皿",        name:"ねぎ塩牛カルビ皿",            size:null,    price:633,  kcal:515,  p:19.9, f:43.3, c:6.6},
+  {cat:"皿",        name:"ねぎ塩豚皿",                  size:null,    price:600,  kcal:331,  p:12.0, f:24.8, c:12.6},
+  {cat:"皿",        name:"鰻皿",                        size:"一枚盛",price:1152, kcal:369,  p:28.3, f:25.3, c:9.4},
+  {cat:"カレー",    name:"黒カレー",                    size:null,    price:498,  kcal:503,  p:8.9,  f:7.1,  c:103.8},
+  {cat:"カレー",    name:"牛黒カレー",                  size:null,    price:652,  kcal:645,  p:15.8, f:18.6, c:106.5},
+  {cat:"カレー",    name:"肉だく牛黒カレー",            size:null,    price:762,  kcal:784,  p:22.4, f:30.1, c:108.9},
+  {cat:"カレー",    name:"チーズ黒カレー",              size:null,    price:660,  kcal:609,  p:15.7, f:15.8, c:104.5},
+  {cat:"カレー",    name:"牛カルビ黒カレー",            size:null,    price:762,  kcal:827,  p:21.0, f:33.9, c:109.0},
+  {cat:"カレー",    name:"牛×牛カルビ黒カレー",        size:null,    price:927,  kcal:968,  p:27.9, f:45.4, c:111.8},
+  {cat:"カレー",    name:"から揚げ黒カレー",            size:null,    price:707,  kcal:899,  p:26.3, f:36.0, c:117.8},
+  {cat:"鰻",        name:"鰻重",                        size:"一枚盛",price:1251, kcal:750,  p:34.5, f:26.0, c:99.9},
+  {cat:"鰻",        name:"鰻重牛小鉢セット",            size:"一枚盛",price:1568, kcal:928,  p:43.2, f:38.5, c:107.7},
+  {cat:"朝食",      name:"納豆定食",                    size:null,    price:430,  kcal:543,  p:21.3, f:11.1, c:91.9},
+  {cat:"朝食",      name:"焼魚定食",                    size:null,    price:530,  kcal:501,  p:23.3, f:9.8,  c:84.8},
+  {cat:"朝食",      name:"特朝定食",                    size:null,    price:630,  kcal:676,  p:37.2, f:19.6, c:92.0},
+  {cat:"朝食",      name:"塩さば定食",                  size:null,    price:530,  kcal:554,  p:18.1, f:13.2, c:84.8},
+  {cat:"朝食",      name:"塩さば特朝定食",              size:null,    price:630,  kcal:729,  p:32.0, f:23.1, c:92.0},
+  {cat:"朝食",      name:"納豆牛小鉢定食",              size:null,    price:468,  kcal:618,  p:21.9, f:17.4, c:97.2},
+  {cat:"朝食",      name:"焼魚牛小鉢定食",              size:null,    price:666,  kcal:653,  p:30.1, f:21.3, c:90.5},
+  {cat:"朝食",      name:"塩さば牛小鉢定食",            size:null,    price:666,  kcal:706,  p:24.9, f:24.8, c:90.4},
+  {cat:"朝食",      name:"ハムエッグ納豆定食",          size:null,    price:468,  kcal:588,  p:24.4, f:13.1, c:96.0},
+  {cat:"朝食",      name:"ハムエッグ牛小鉢定食",        size:null,    price:567,  kcal:630,  p:23.4, f:19.9, c:91.8},
+  {cat:"朝食",      name:"Wハムエッグ納豆定食",         size:null,    price:567,  kcal:689,  p:33.6, f:19.2, c:97.4},
+  {cat:"朝食",      name:"Wハムエッグ牛小鉢定食",       size:null,    price:666,  kcal:732,  p:32.7, f:26.0, c:93.2},
+  {cat:"お子様",    name:"ミニ牛丼セット",              size:null,    price:437,  kcal:352,  p:9.0,  f:14.0, c:49.5},
+  {cat:"お子様",    name:"ミニカレーセット",            size:null,    price:437,  kcal:271,  p:5.0,  f:2.0,  c:59.9},
+  {cat:"サイド",    name:"生野菜サラダ",                size:null,    price:162,  kcal:23,   p:0.9,  f:0.2,  c:5.2},
+  {cat:"サイド",    name:"ポテトサラダ",                size:null,    price:195,  kcal:95,   p:1.9,  f:4.8,  c:11.8},
+  {cat:"サイド",    name:"みそ汁",                      size:null,    price:96,   kcal:20,   p:1.3,  f:0.6,  c:2.5},
+  {cat:"サイド",    name:"とん汁",                      size:null,    price:250,  kcal:160,  p:5.7,  f:9.1,  c:14.0},
+  {cat:"サイド",    name:"あさり汁",                    size:null,    price:228,  kcal:53,   p:7.3,  f:1.2,  c:2.8},
+  {cat:"サイド",    name:"しじみ汁",                    size:null,    price:228,  kcal:41,   p:4.3,  f:1.1,  c:3.3},
+  {cat:"サイド",    name:"玉子",                        size:null,    price:118,  kcal:76,   p:6.2,  f:5.2,  c:0.2},
+  {cat:"サイド",    name:"ねぎ玉子",                    size:null,    price:162,  kcal:103,  p:7.0,  f:5.5,  c:5.8},
+  {cat:"サイド",    name:"ねぎラー油",                  size:null,    price:162,  kcal:108,  p:1.2,  f:8.5,  c:6.9},
+  {cat:"サイド",    name:"お新香",                      size:null,    price:162,  kcal:13,   p:0.7,  f:0.1,  c:2.6},
+  {cat:"サイド",    name:"キムチ",                      size:null,    price:162,  kcal:26,   p:0.9,  f:0.2,  c:5.1},
+  {cat:"サイド",    name:"から揚げ（単品1個）",          size:null,    price:162,  kcal:197,  p:8.7,  f:14.4, c:7.0},
+  {cat:"サイド",    name:"ご飯",                        size:"並盛",  price:217,  kcal:343,  p:5.5,  f:0.7,  c:81.6},
+  {cat:"サイド",    name:"肉だく（牛小鉢）",            size:null,    price:222,  kcal:142,  p:6.8,  f:11.5, c:2.8},
+  {cat:"サイド",    name:"鮭（単品）",                  size:null,    price:250,  kcal:133,  p:13.9, f:8.5,  c:0.1},
+  {cat:"サイド",    name:"塩さば（単品）",              size:null,    price:250,  kcal:185,  p:10.7, f:12.0, c:0.0},
+  {cat:"サイド",    name:"納豆",                        size:null,    price:129,  kcal:98,   p:7.8,  f:4.6,  c:6.2},
+];
+
+// ===== 難易度設定 =====
+const DIFF = {
+  easy:   { spread: 150, unit: 50  },
+  normal: { spread: 70,  unit: 10  },
+  hard:   { spread: 30,  unit: 5   },
+};
+
+let difficulty = 'easy';
+let questions = [], qIdx = 0, score = 0, history = [], answered = false;
+
+// ===== Utils =====
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function makeChoices(correct) {
+  const cfg = DIFF[difficulty];
+  const set = new Set([correct]);
+  let tries = 0;
+  while (set.size < 4 && tries < 300) {
+    tries++;
+    const sign = Math.random() < 0.5 ? 1 : -1;
+    const offset = Math.round((cfg.spread * 0.5 + Math.random() * cfg.spread * 1.8) * sign / cfg.unit) * cfg.unit;
+    const cand = correct + offset;
+    if (cand > 0 && Math.abs(cand - correct) >= cfg.spread * 0.4 && ![...set].some(v => Math.abs(v - cand) < cfg.spread * 0.35)) {
+      set.add(cand);
+    }
+  }
+  return shuffle([...set]);
+}
+
+// ===== 難易度ボタン =====
+function setDiff(btn) {
+  difficulty = btn.dataset.diff;
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ===== ゲーム開始 =====
+function startGame() {
+  score = 0; qIdx = 0; history = [];
+  questions = shuffle(DATA).slice(0, 10);
+  document.getElementById('startScreen').style.display = 'none';
+  document.getElementById('resultScreen').style.display = 'none';
+  document.getElementById('quizArea').style.display = 'block';
+  showQ();
+}
+
+function showQ() {
+  answered = false;
+  const q = questions[qIdx];
+  const pct = (qIdx / 10) * 100;
+
+  document.getElementById('qNum').textContent = qIdx + 1;
+  document.getElementById('scoreDisp').textContent = score;
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progLeft').textContent = qIdx + ' / 10';
+  document.getElementById('progPct').textContent = Math.round(pct) + '%';
+  document.getElementById('catBadge').textContent = q.cat;
+  document.getElementById('menuName').textContent = q.name;
+
+  const sz = document.getElementById('menuSize');
+  if (q.size) { sz.textContent = q.size; sz.style.display = 'inline-block'; }
+  else        { sz.style.display = 'none'; }
+
+  const choices = makeChoices(q.kcal);
+  const grid = document.getElementById('choicesGrid');
+  grid.innerHTML = '';
+  choices.forEach(v => {
+    const btn = document.createElement('button');
+    btn.className = 'c-btn';
+    btn.innerHTML = `${v.toLocaleString()}<span class="unit"> kcal</span>`;
+    btn.onclick = () => answer(v, q, btn);
+    grid.appendChild(btn);
+  });
+
+  document.getElementById('feedback').style.display = 'none';
+}
+
+function answer(selected, q, btn) {
+  if (answered) return;
+  answered = true;
+  const ok = selected === q.kcal;
+  if (ok) score++;
+  history.push({ q, selected, ok });
+
+  document.querySelectorAll('.c-btn').forEach(b => {
+    b.disabled = true;
+    const v = parseInt(b.textContent.replace(/,/g, ''));
+    if (v === q.kcal) b.classList.add('correct');
+    else if (b === btn && !ok) b.classList.add('wrong');
+  });
+
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback ' + (ok ? 'fb-ok' : 'fb-ng');
+  fb.style.display = 'block';
+
+  document.getElementById('fbHead').textContent = ok
+    ? '✅ 正解！'
+    : `❌ 不正解… 正解は ${q.kcal.toLocaleString()} kcal でした`;
+
+  const diff = selected - q.kcal;
+  document.getElementById('fbSub').textContent = ok
+    ? `${q.name} は ${q.kcal.toLocaleString()} kcal です。`
+    : `${Math.abs(diff).toLocaleString()} kcal ${diff > 0 ? '多め' : '少なめ'}でした。`;
+
+  document.getElementById('nutGrid').innerHTML = `
+    <div class="nut-box hl">
+      <div class="nut-lbl">カロリー</div>
+      <div class="nut-val">${q.kcal.toLocaleString()}<small>kcal</small></div>
+    </div>
+    <div class="nut-box">
+      <div class="nut-lbl">たんぱく質</div>
+      <div class="nut-val">${q.p}<small>g</small></div>
+    </div>
+    <div class="nut-box">
+      <div class="nut-lbl">脂質</div>
+      <div class="nut-val">${q.f}<small>g</small></div>
+    </div>
+    <div class="nut-box">
+      <div class="nut-lbl">炭水化物</div>
+      <div class="nut-val">${q.c}<small>g</small></div>
+    </div>
+  `;
+
+  document.getElementById('nextBtn').textContent = qIdx === 9 ? '結果を見る 🎉' : '次の問題へ →';
+  document.getElementById('scoreDisp').textContent = score;
+}
+
+function nextQ() {
+  qIdx++;
+  if (qIdx >= 10) showResult();
+  else showQ();
+}
+
+function showResult() {
+  document.getElementById('quizArea').style.display = 'none';
+  const rs = document.getElementById('resultScreen');
+  rs.style.display = 'block';
+
+  const rate = score / 10;
+  const [icon, msg] =
+    rate === 1    ? ['🏆', '完璧！全問正解！あなたは吉野家マスター！'] :
+    rate >= 0.8   ? ['🎉', 'すごい！かなりの吉野家通ですね！'] :
+    rate >= 0.6   ? ['👍', 'なかなか！もう少しで吉野家マスター！'] :
+    rate >= 0.4   ? ['🙂', 'まずまず！もっと吉野家に行こう！'] :
+                    ['😅', '残念…もう一度チャレンジ！'];
+
+  document.getElementById('resIcon').textContent = icon;
+  document.getElementById('resScore').textContent = `${score} / 10 問正解`;
+  document.getElementById('resMsg').textContent = msg;
+
+  document.getElementById('resHistory').innerHTML = history.map(h => {
+    const label = h.q.name + (h.q.size ? `（${h.q.size}）` : '');
+    return `<div class="h-row ${h.ok ? 'ok' : 'ng'}">
+      <span class="h-name">${label}</span>
+      <span class="h-ans">${h.ok ? '✅' : '❌'} ${h.q.kcal.toLocaleString()} kcal</span>
+    </div>`;
+  }).join('');
+}
+
+function goStart() {
+  document.getElementById('resultScreen').style.display = 'none';
+  document.getElementById('startScreen').style.display = 'block';
+}
+</script>
+</body>
+</html>
